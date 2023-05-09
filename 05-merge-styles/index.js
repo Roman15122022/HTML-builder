@@ -6,7 +6,12 @@ const bundleFilePath = './project-dist/bundle.css';
 
 // Создаем папку project-dist, если ее не существует
 if (!fs.existsSync('./project-dist')) {
-  fs.mkdirSync('./project-dist');
+  fs.mkdir('./project-dist', (err) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+  });
 }
 
 // Читаем содержимое папки styles
@@ -17,7 +22,6 @@ fs.readdir(stylesFolderPath, (err, files) => {
   }
 
   const styles = [];
-
 
   files.forEach((file) => {
     const filePath = path.join(stylesFolderPath, file);

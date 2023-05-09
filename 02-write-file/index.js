@@ -1,31 +1,45 @@
 const fs = require('fs');
 const readline = require('readline');
+const { promisify } = require('util');
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
+const mkdirPromise = promisify(fs.mkdir);
+const writeFilePromise = promisify(fs.writeFile);
+
 const filePath = './02-write-file/text.txt';
 
-if (!fs.existsSync('./02-write-file')) {
-  fs.mkdirSync('./02-write-file');
-}
+(async () => {
+  try {
+    await mkdirPromise('./02-write-file');
+  } catch (err) {
+    if (err.code !== 'EEXIST') {
+      console.error(err);
+      process.exit(1);
+    }
+  }
+})();
 
 rl.setPrompt('Введите текст для записи в файл: ');
 rl.prompt();
 
-rl.on('line', (input) => {
+rl.on('line', async (input) => {
   if (input.toLowerCase() === 'exit') {
     console.log('Завершение программы...');
     rl.close();
-  } else {
-    const streamOptions = { flags: 'a', encoding: 'utf8' };
-    const writeStream = fs.createWriteStream(filePath, streamOptions);
-    writeStream.write(`${input}\n`);
-    console.log(`Текст "${input}" записан в файл.`);
-    rl.prompt();
+    return;
   }
+  try {
+    await writeFilePromise(filePath, `${input}\n`, { flag: 'a' });
+    console.log(`Текст "${input}" записан в файл.`);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+  rl.prompt();
 });
 
 rl.on('close', () => {
