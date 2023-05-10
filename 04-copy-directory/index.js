@@ -1,37 +1,46 @@
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
 
-const copyDir = (src, dest) => {
+const copyDir = async (src, dest) => {
   // создаем папку назначения, если ее нет
-  if (!fs.existsSync(dest)) {
-    fs.mkdirSync(dest);
+  try {
+    await fs.mkdir(dest);
+  } catch (err) {
+    if (err.code !== 'EEXIST') {
+      throw err;
+    }
   }
 
   // получаем список файлов в директории
-  const files = fs.readdirSync(src);
+  const files = await fs.readdir(src);
 
   // рекурсивно копируем каждый файл в папку назначения
-  files.forEach((file) => {
+  for (const file of files) {
     const srcPath = path.join(src, file);
     const destPath = path.join(dest, file);
 
     // получаем информацию о файле/папке
-    const stat = fs.statSync(srcPath);
+    const stat = await fs.stat(srcPath);
 
     if (stat.isDirectory()) {
       // если это папка, рекурсивно копируем ее содержимое
-      copyDir(srcPath, destPath);
+      await copyDir(srcPath, destPath);
     } else {
       // если это файл, копируем его
-      const readStream = fs.createReadStream(srcPath);
-      const writeStream = fs.createWriteStream(destPath);
-      readStream.pipe(writeStream);
+      const fileData = await fs.readFile(srcPath);
+      await fs.writeFile(destPath, fileData);
     }
-  });
+  }
 };
 
 const sourceFolder = './04-copy-directory/files';
 const destinationFolder = './04-copy-directory/files-copy';
 
 // запускаем копирование директории
-copyDir(sourceFolder, destinationFolder);
+copyDir(sourceFolder, destinationFolder)
+  .then(() => {
+    console.log('Directory copied successfully!');
+  })
+  .catch((err) => {
+    console.error('Error copying directory:', err);
+  });
